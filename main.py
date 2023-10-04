@@ -7,6 +7,7 @@ from log import setup_logger
 import matplotlib.pyplot as plt
 from scipy.fft import fft, ifft
 import warnings
+
 warnings.filterwarnings("ignore")
 
 logger = setup_logger("audioviz")
@@ -61,6 +62,7 @@ def run_from_file(filepath):
         output=True,
     )
 
+    frame_counter = 0
     data = wavefile.readframes(chunk)
 
     while data:
@@ -69,7 +71,9 @@ def run_from_file(filepath):
         data = wavefile.readframes(DURATION * rate)
 
         # TODO: create video frame from data
+        logger.info(f"Handling frame {frame_counter}")
         handle_chunk(data, dtype, rate)
+        frame_counter += 1
         break
 
     # Cleanup
@@ -87,30 +91,27 @@ def get_dtype(sample_width: int):
     exit(1)
 
 
-def handle_chunk(data, dtype, sample_rate):
+def get_freq_amp(sample_rate, samples):
     T = 1 / sample_rate
-    logger.info("Handling frame")
+    num_samples = samples.size
+    fft_sig_abs = abs(fft(samples))
+    frequencies = np.linspace(0.0, 1.0 / (2.0 * T), num_samples // 2)
+    amplitudes = 2 / num_samples * np.abs(fft_sig_abs[0 : num_samples // 2])
+    return (frequencies, amplitudes)
+
+
+def handle_chunk(data, dtype, sample_rate):
     sig = np.frombuffer(data, dtype)
     left, right = sig[0::2], sig[1::2]
+    freq_L, amp_L = get_freq_amp(sample_rate, left)
+    freq_R, amp_R = get_freq_amp(sample_rate, right)
 
-    # LEFT
-    left_size = left.size
-    fft_sig_abs = abs(fft(left))
-    freq_left = np.linspace(0.0, 1.0/(2.0*T), left_size//2)
-    amp_left = 2/left_size * np.abs(fft_sig_abs[0:left_size//2])
-
-    # RIGHT
-    right_size = right.size
-    fft_sig_abs = abs(fft(right))
-    freq_right = np.linspace(0.0, 1.0/(2.0*T), right_size//2)
-    amp_right = 2/left_size * np.abs(fft_sig_abs[0:right_size//2])
 
 def plot_sig_data(data, dtype, sample_rate):
     T = 1 / sample_rate
     logger.info("Handling frame")
     sig = np.frombuffer(data, dtype)
     left, right = sig[0::2], sig[1::2]
-
 
     fig, (plot_a, plot_b, plot_c) = plt.subplots(3)
     plot_a.plot(left)
@@ -119,8 +120,8 @@ def plot_sig_data(data, dtype, sample_rate):
 
     left_size = left.size
     fft_sig_abs = abs(fft(left))
-    xf_left = np.linspace(0.0, 1.0/(2.0*T), left_size//2)
-    yf_left = 2/left_size * np.abs(fft_sig_abs[0:left_size//2])
+    xf_left = np.linspace(0.0, 1.0 / (2.0 * T), left_size // 2)
+    yf_left = 2 / left_size * np.abs(fft_sig_abs[0 : left_size // 2])
     plot_b.semilogy(xf_left, yf_left)
 
     plot_b.set_xlabel("Left - Frequency")
