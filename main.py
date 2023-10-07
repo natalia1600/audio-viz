@@ -2,18 +2,23 @@ import sys
 import getopt
 import wave
 import pyaudio
+import pygame
 import numpy as np
 from log import setup_logger
 import matplotlib.pyplot as plt
 from scipy.fft import fft, ifft
 import warnings
+import state
+
+from gui import draw_frame
 
 warnings.filterwarnings("ignore")
 
 logger = setup_logger("audioviz")
 
+
+MAX_AMPLITUDE = 50000
 FPS = 60
-DURATION = 1
 
 
 def main(argv):
@@ -21,7 +26,7 @@ def main(argv):
     for opt, arg in opts:
         if opt == "-h":
             print("main.py -i <wavefile>")
-            sys.exit()
+            sys.exit() 
         elif opt in ("-i", "--input"):
             run_from_file(arg)
             return
@@ -62,26 +67,49 @@ def run_from_file(filepath):
         output=True,
     )
 
+    max_y = 0
+
+    # Window creation
+    print("Creating game")
+    pygame.init()
+    screen = pygame.display.set_mode((1280, 720))
+    max_x, max_y = screen.get_size()
+    running = True
+
     frame_counter = 0
     data = wavefile.readframes(chunk)
 
-    while data:
-        # stream.write(data)
-        # data = wavefile.readframes(chunk)
-        data = wavefile.readframes(DURATION * rate)
+    print("Starting main loop")
+    while data and running:
+        print("main loop iter", frame_counter)
+
+        # Handle user inputs
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            elif event.type == pygame.KEYDOWN and event.key == pygame.K_q:
+                running = False
+
+        stream.write(data)
+        data = wavefile.readframes(chunk)
 
         # TODO: create video frame from data
         logger.info(f"Handling frame {frame_counter}")
         handle_chunk(data, dtype, rate)
-        # plot_sig_data(data, dtype, rate)
-        display_plots(data, dtype, rate)
-        frame_counter += 1
-        break
 
+        # plot_sig_data(data, dtype, rate)
+        # display_plots(data, dtype, rate)
+        frame_counter += 1
+
+    
     # Cleanup
+    print("Goodbye!")
+
     wavefile.close()
     stream.close()
     pa.terminate()
+
+    pygame.quit()
 
 
 def get_dtype(sample_width: int):
@@ -103,10 +131,16 @@ def get_freq_amp(sample_rate, samples):
 
 
 def handle_chunk(data, dtype, sample_rate):
+    print("handle chunk")
     sig = np.frombuffer(data, dtype)
     left, right = sig[0::2], sig[1::2]
     freq_L, amp_L = get_freq_amp(sample_rate, left)
-    freq_R, amp_R = get_freq_amp(sample_rate, right)
+    # freq_R, amp_R = get_freq_amp(sample_rate, right) FOR NOW IGNORE RIGHT CHANNEL
+
+    # Update screen
+    draw_frame(freq_L, amp_L)
+
+
 
 
 def plot_sig_data(label, sig, sample_rate):
