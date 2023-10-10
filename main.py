@@ -6,15 +6,11 @@ import pygame
 import numpy as np
 from log import setup_logger
 import matplotlib.pyplot as plt
-from scipy.fft import fft, ifft
-import warnings
-import state
+from scipy.fft import fft
 
 from gui import draw_frame
 
-warnings.filterwarnings("ignore")
-
-logger = setup_logger("audioviz")
+logger = setup_logger("main")
 
 
 MAX_AMPLITUDE = 50000
@@ -26,7 +22,7 @@ def main(argv):
     for opt, arg in opts:
         if opt == "-h":
             print("main.py -i <wavefile>")
-            sys.exit() 
+            sys.exit()
         elif opt in ("-i", "--input"):
             run_from_file(arg)
             return
@@ -67,22 +63,16 @@ def run_from_file(filepath):
         output=True,
     )
 
-    max_y = 0
-
     # Window creation
-    print("Creating game")
+    logger.info("Creating window instance")
     pygame.init()
-    screen = pygame.display.set_mode((1280, 720))
-    max_x, max_y = screen.get_size()
     running = True
 
     frame_counter = 0
     data = wavefile.readframes(chunk)
 
-    print("Starting main loop")
+    logger.info("Starting main loop")
     while data and running:
-        print("main loop iter", frame_counter)
-
         # Handle user inputs
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -101,7 +91,6 @@ def run_from_file(filepath):
         # display_plots(data, dtype, rate)
         frame_counter += 1
 
-    
     # Cleanup
     print("Goodbye!")
 
@@ -131,16 +120,20 @@ def get_freq_amp(sample_rate, samples):
 
 
 def handle_chunk(data, dtype, sample_rate):
-    print("handle chunk")
+    logger.info(f"Handling chunk (rate: {sample_rate}, dtype: {dtype})")
+
     sig = np.frombuffer(data, dtype)
-    left, right = sig[0::2], sig[1::2]
+    left, _right = sig[0::2], sig[1::2]
     freq_L, amp_L = get_freq_amp(sample_rate, left)
-    # freq_R, amp_R = get_freq_amp(sample_rate, right) FOR NOW IGNORE RIGHT CHANNEL
+
+    logger.info(f"Frequencies: {freq_L.shape}")
+    logger.info(f"Amplitudes : {amp_L.shape}")
+
+    # FOR NOW IGNORE THE RIGHT CHANNEL
+    # freq_R, amp_R = get_freq_amp(sample_rate, right)
 
     # Update screen
     draw_frame(freq_L, amp_L)
-
-
 
 
 def plot_sig_data(label, sig, sample_rate):
@@ -168,14 +161,16 @@ def plot_sig_data(label, sig, sample_rate):
     plot_c.set_ylabel("Frequency")
 
     plt.suptitle(label + " Waveform")
-    
+
     plt.show()
+
 
 def display_plots(data, dtype, sample_rate):
     sig = np.frombuffer(data, dtype)
     left, right = sig[0::2], sig[1::2]
     plot_sig_data("Left", left, sample_rate)
     plot_sig_data("Right", right, sample_rate)
+
 
 if __name__ == "__main__":
     main(sys.argv[1:])

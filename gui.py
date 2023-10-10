@@ -1,12 +1,18 @@
 import pygame
 import random
 import numpy as np
-import math
 
 import state
+from log import setup_logger
 
+logger = setup_logger("gui")
 
 COLOR_BG = (28, 28, 28)
+
+# class Visualizer:
+#     def __init__(self):
+#         self.screen = TODO
+#         self.max_amplitude = TODO
 
 
 pygame.init()
@@ -27,11 +33,10 @@ def draw_bars(xs, ys):
     num_points = xs.size
     step = num_points // NUM_BARS
     bar_width = screen_width // NUM_BARS
-    print("num points", num_points)
-    print("step      ", step)
+    logger.info(f"Number of points provided to draw bars {num_points}")
 
     # start = math.log(1, 10)
-    # stop = math.log(24000, 10) 
+    # stop = math.log(24000, 10)
     # ys_to_sample = np.logspace(start, stop, num=NUM_BARS)
 
     # print("ys_to sample", ys_to_sample)
@@ -50,13 +55,9 @@ def draw_bars(xs, ys):
     ys_samples = ys[::step]
     xs = np.arange(0, screen_width, screen_width // NUM_BARS)
 
-
     state.max_amplitude = max(state.max_amplitude, np.max(ys_samples))
-    print("max amplitude", state.max_amplitude)
     scale_factor = screen_height / state.max_amplitude
     ys_samples_scaled = ys_samples * scale_factor
-
-    print(ys)
 
     for x, y in zip(xs, ys_samples_scaled):
         color = get_random_color()
@@ -71,7 +72,7 @@ def get_random_color():
 
 
 def draw_frame(xs, ys):
-    print("drawing new frame")
+    logger.info("Creating new frame")
 
     # Set background
     screen.fill(COLOR_BG)
@@ -80,7 +81,5 @@ def draw_frame(xs, ys):
     draw_bars(xs, ys)
 
     # Commit changes
+    logger.info("Committing new frame")
     pygame.display.flip()
-
-
-
