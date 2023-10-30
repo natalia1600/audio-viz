@@ -104,7 +104,6 @@ def run_from_file(filepath):
     pa.terminate()
 
 
-
 def get_dtype(sample_width: int):
     if sample_width == 1:
         return np.int8
@@ -119,7 +118,7 @@ def get_freq_amp(sample_rate, samples):
     num_samples = samples.size
     fft_sig_abs = abs(fft(samples))
     frequencies = np.linspace(0.0, 1.0 / (2.0 * T), num_samples // 2)
-    amplitudes = 2 / num_samples * np.abs(fft_sig_abs[0 : num_samples // 2])
+    amplitudes = 2 / num_samples * np.abs(fft_sig_abs[0: num_samples // 2])
     return (frequencies, amplitudes)
 
 
